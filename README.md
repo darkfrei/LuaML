@@ -312,30 +312,12 @@ comment
 ```
 
 ### String Concatenation
-```lua
-full_name = first_name .. " " .. last_name
-url = "https://" .. domain .. "/" .. path
-```
+
+No  string concatenation!
 
 ### Numeric Operations (optional, if parser supports)
-```lua
-total = price * quantity
-percentage = (value / total) * 100
-```
 
-### References to Other Values
-```lua
-defaults = {
-  timeout = 30,
-  retries = 3
-}
-
-service1 = {
-  name = "API",
-  timeout = defaults.timeout,  -- reference to value
-  retries = defaults.retries
-}
-```
+No numeric operations!
 
 ---
 
