@@ -331,8 +331,10 @@ No numeric operations!
 | Trailing comma | No | No | Yes |
 | Multi-line strings | No | Yes | Yes |
 | Numbers in different formats | No | Yes | Yes |
-| Expressions | No | No | No |
+| Expressions | No | No | No* |
 
+*not yet; not ready; maybe in the future
+  
 ---
 
 ## Usage Recommendations
