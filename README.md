@@ -315,7 +315,7 @@ comment
 
 No  string concatenation!
 
-### Numeric Operations (optional, if parser supports)
+### Numeric Operations
 
 No numeric operations!
 
