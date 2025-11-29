@@ -342,8 +342,10 @@ No numeric operations!
 - Data structure descriptions in Lua projects
 - Replacing JSON/YAML where more flexibility is needed
 - DSL (Domain Specific Languages) based on Lua syntax
+- Game data files (Love2D, Defold, etc.)
+- Plugin configurations
 
-**Not suitable for:**
-- API interactions (use JSON)
-- Cases requiring standardization
-- Projects without Lua developers on the team
+**Consider limitations:**
+- Less common than JSON/YAML — fewer tools and libraries
+- Requires custom parser implementation
+- Not built into web browsers like JSON
