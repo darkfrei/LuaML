@@ -313,11 +313,11 @@ comment
 
 ### String Concatenation
 
-No  string concatenation!
+No  string concatenation!*
 
 ### Numeric Operations
 
-No numeric operations!
+No numeric operations!*
 
 ---
 
