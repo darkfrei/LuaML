@@ -298,6 +298,17 @@ computed = {
 
 --[[multi-line
 comment]]
+
+
+--[[
+other multi-line
+comment
+]]
+
+--[[
+my favorite multi-line
+comment
+--]]
 ```
 
 ### String Concatenation
