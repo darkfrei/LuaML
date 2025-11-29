@@ -111,7 +111,7 @@ config = {
   "second",     -- [2]
   key = "value",
   nested = {
-    "item",
+    "item",     -- [1]
     param = 100
   }
 }
