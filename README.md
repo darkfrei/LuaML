@@ -326,7 +326,7 @@ No numeric operations!
 | Feature | JSON | TOML | LuaML |
 |---------|------|------|-------|
 | Comments | No | Yes | Yes |
-| Readability | 3 | 4 | 4 |
+| Readability | 6/10 | 8/10 | 10/10 |
 | Nesting | Yes | Yes (harder) | Yes |
 | Trailing comma | No | No | Yes |
 | Multi-line strings | No | Yes | Yes |
