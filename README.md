@@ -333,32 +333,6 @@ No numeric operations!
 | Numbers in different formats | No | Yes | Yes |
 | Expressions | No | No | No |
 
-
----
-
-## Usage
-
-### Parsing Example (pseudocode)
-```python
-import luaml
-
-# load from file
-config = luaml.load_file("config.luaml")
-
-# access data
-print(config.app.name)  # "MyWebApp"
-print(config.server.port)  # 8080
-print(config.users[0].username)  # "admin"
-
-# load from string
-data = luaml.loads("""
-person = {
-  name = "John",
-  age = 30
-}
-""")
-```
-
 ---
 
 ## Usage Recommendations
