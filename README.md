@@ -296,10 +296,8 @@ computed = {
 ```lua
 -- single-line comment
 
---[[
-  multi-line
-  comment
-]]
+--[[multi-line
+comment]]
 ```
 
 ### String Concatenation
