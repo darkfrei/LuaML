@@ -1,6 +1,10 @@
 # Compiled Lua sources
 luac.out
 
+# Love2D example and example files
+*.luaml
+main.lua
+
 # luarocks build files
 *.src.rock
 *.zip
@@ -38,4 +42,6 @@ luac.out
 *.i*86
 *.x86_64
 *.hex
+
+
 
