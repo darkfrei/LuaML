@@ -1,0 +1,89 @@
+-- mode: global
+-- array part
+1
+2
+4
+-- end of array part
+
+-- object part
+score = 42
+settings = {
+  "default",
+  volume = 0.8,
+  fullscreen = false,
+  type = "123456",
+  resolution = {
+    height = 1080,
+    width = 1920,
+  },
+}
+users = {
+  {
+    1,
+    2,
+    3,
+    age = 7,
+    name = "Alice",
+    id = 1,
+    active = true,
+  },
+  {
+    age = 9,
+    name = "Bob",
+    id = 2,
+    active = false,
+  },
+  {
+    age = 12,
+    name = "Charlie",
+    id = 3,
+    active = true,
+  },
+  admin = "Bob",
+}
+items = {
+  3,
+  {
+    name = "Apple",
+    price = 0.5,
+    id = 101,
+  },
+  {
+    name = "Banana",
+    price = 0.3,
+    id = 102,
+  },
+  {
+    name = "Orange",
+    price = 0.7,
+    id = 103,
+  },
+}
+message = "Hello, LuaML!"
+flag = true
+nested = {
+  arr1 = {
+    10,
+    20,
+    30,
+    40,
+    50,
+  },
+  arr2 = {
+    b = "y",
+    c = "z",
+    a = "x",
+  },
+  deep = {
+    key2 = {
+      hello = "world",
+      foo = "bar",
+    },
+    key1 = {
+      1,
+      2,
+      3,
+    },
+  },
+}
+-- end of object part

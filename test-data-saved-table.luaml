@@ -1,0 +1,86 @@
+-- mode: table
+return {
+  1,
+  2,
+  4,
+  settings = {
+    "default",
+    type = "123456",
+    resolution = {
+      height = 1080,
+      width = 1920,
+    },
+    volume = 0.8,
+    fullscreen = false,
+  },
+  items = {
+    3,
+    {
+      name = "Apple",
+      id = 101,
+      price = 0.5,
+    },
+    {
+      name = "Banana",
+      id = 102,
+      price = 0.3,
+    },
+    {
+      name = "Orange",
+      id = 103,
+      price = 0.7,
+    },
+  },
+  nested = {
+    arr2 = {
+      b = "y",
+      c = "z",
+      a = "x",
+    },
+    deep = {
+      key2 = {
+        foo = "bar",
+        hello = "world",
+      },
+      key1 = {
+        1,
+        2,
+        3,
+      },
+    },
+    arr1 = {
+      10,
+      20,
+      30,
+      40,
+      50,
+    },
+  },
+  users = {
+    {
+      1,
+      2,
+      3,
+      active = true,
+      age = 7,
+      id = 1,
+      name = "Alice",
+    },
+    {
+      active = false,
+      age = 9,
+      id = 2,
+      name = "Bob",
+    },
+    {
+      active = true,
+      age = 12,
+      id = 3,
+      name = "Charlie",
+    },
+    admin = "Bob",
+  },
+  message = "Hello, LuaML!",
+  score = 42,
+  flag = true,
+}
