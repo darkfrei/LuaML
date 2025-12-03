@@ -1,120 +1,12 @@
 -- luaml.lua
 -- ml parser with lua-like syntax
 -- comments are lowercase
+-- https://github.com/darkfrei/LuaML
+-- Version: 2025-12-03
 
 local luaml = {}
 
-------
-
 local parseValue, parseBraceBlock, parseAssignments
-
-------
-
-function parseBraceBlock(tokens, pos)
-	-- parse { ... } block as list or object
-	pos = pos + 1 -- skip '{'
-	local block = {}
-	local isObject = nil -- detect later
-
-	while true do
-		local t = tokens[pos]
-		if not t then error("unexpected end inside { }") end
-
-		if t.type == "rbrace" then
-			return block, pos + 1
-		end
-
-		local key, val
-
-		-- detect object entry
-		if t.type == "ident" and tokens[pos + 1] and tokens[pos + 1].type == "eq" then
-			isObject = true
-			key = t.value
-			pos = pos + 2
-
-			val, pos = parseValue(tokens, pos)
-			block[key] = val
-
-		else
-			-- list entry
-			if isObject == nil then isObject = false end
-			if isObject then
-				error("cannot mix list values with object fields")
-			end
-
-			val, pos = parseValue(tokens, pos)
-			table.insert(block, val)
-		end
-
-		t = tokens[pos]
-		if not t then error("unexpected end after value") end
-
-		if t.type == "comma" then
-			pos = pos + 1
-		elseif t.type ~= "rbrace" then
-			error("expected ',' or '}'")
-		end
-	end
-end
-
-------
-
-function parseValue(tokens, pos)
-	local t = tokens[pos]
-	if not t then error("unexpected end when reading value") end
-
-	if t.type == "string" or t.type == "number" or t.type == "bool" or t.type == "nil" then
-		return t.value, pos + 1
-
-	elseif t.type == "lbrace" then
-		return parseBraceBlock(tokens, pos)
-
-	elseif t.type == "ident" then
-		return t.value, pos + 1
-
-	else
-		error("unexpected token in value: " .. t.type)
-	end
-end
-
-------
-function parseAssignments(tokens)
-	-- result table
-	local result = {}
-	local pos = 1
-
-	-- top-level { ... } shortcut
-	if tokens[1] and tokens[1].type == "lbrace" then
-		return (parseBraceBlock(tokens, 1))
-	end
-
-	while pos <= #tokens do
-		local t = tokens[pos]
-
-		-- if "ident =" → normal field
-		if t.type == "ident"
-		   and tokens[pos + 1]
-		   and tokens[pos + 1].type == "eq" then
-
-			local key = t.value
-			pos = pos + 2 -- skip key and '='
-
-			local val
-			val, pos = parseValue(tokens, pos)
-			result[key] = val
-
-		else
-			-- otherwise → list value
-			local val
-			val, pos = parseValue(tokens, pos)
-			table.insert(result, val)
-		end
-	end
-
-	return result
-end
-
-
 
 ------
 
@@ -150,19 +42,19 @@ local function tokenize(str)
 			end
 
 		elseif ch == "{" then
-			tokens[#tokens+1] = {type="lbrace"}
+			tokens[#tokens+1] = {type="{"}
 			i = i + 1
 
 		elseif ch == "}" then
-			tokens[#tokens+1] = {type="rbrace"}
+			tokens[#tokens+1] = {type="}"}
 			i = i + 1
 
 		elseif ch == "," then
-			tokens[#tokens+1] = {type="comma"}
+			tokens[#tokens+1] = {type=","}
 			i = i + 1
 
 		elseif ch == "=" then
-			tokens[#tokens+1] = {type="eq"}
+			tokens[#tokens+1] = {type="="}
 			i = i + 1
 
 			-- multi-line string [[ ... ]]
@@ -219,7 +111,10 @@ local function tokenize(str)
 				i = i + 1
 			end
 			local word = str:sub(start,i-1)
-			if word == "true" then
+			if word == "return" then
+--				print ('found "return"')
+				tokens[#tokens+1] = {type="return"}
+			elseif word == "true" then
 				tokens[#tokens+1] = {type="bool", value=true}
 			elseif word == "false" then
 				tokens[#tokens+1] = {type="bool", value=false}
@@ -268,45 +163,191 @@ local function tokenize(str)
 	return tokens
 end
 
+
+
 ------
 
-local function encodeValue(v, indent, out)
-	local t = type(v)
+function parseBraceBlock(tokens, pos)
+	-- parse { ... } block as list or object
+	pos = pos + 1 -- skip '{'
+	local block = {}
+	local isObject = nil -- detect later
 
-	if t == "number" then
---		out[#out+1] = '\n-- number '..v..'\n'
-		out[#out+1] = tostring(v)
-	elseif t == "boolean" then
---		out[#out+1] = '-- boolean '..tostring(v)..'\n'
-		out[#out+1] = v and "true" or "false"
-	elseif t == "nil" then
-		out[#out+1] = "nil"
-	elseif t == "string" then
-		-- use [[ ]] for multi-line strings
-		if v:match("\n") then
-			out[#out+1] = "[["
-			out[#out+1] = v
-			out[#out+1] = "]]"
-		else
-			out[#out+1] = string.format("%q", v)
+	while true do
+		local token = tokens[pos]
+		local tokenNext = tokens[pos + 1]
+
+		if not token then error("unexpected end inside { }") end
+
+		if token.type == "}" then
+			return block, pos + 1
 		end
 
-	elseif t == "table" then
+		local key, val
+
+		-- detect object entry
+		if token.type == "ident" and tokenNext and tokenNext.type == "=" then
+			isObject = true
+			key = token.value
+			pos = pos + 2
+
+			val, pos = parseValue(tokens, pos)
+			block[key] = val
+
+		else
+			-- list entry
+			if isObject == nil then isObject = false end
+			if isObject then
+				error("cannot mix list values with object fields")
+			end
+
+			val, pos = parseValue(tokens, pos)
+			table.insert(block, val)
+		end
+
+		token = tokens[pos]
+		if not token then error("unexpected end after value") end
+
+		if token.type == "," then
+			pos = pos + 1
+		elseif token.type ~= "}" then
+			error("expected ',' or '}'")
+		end
+	end
+end
+
+------
+
+function parseValue(tokens, pos)
+	local token = tokens[pos]
+	if not token then error("unexpected end when reading value") end
+
+	if token.type == "string" or token.type == "number" or token.type == "bool" or token.type == "nil" then
+		return token.value, pos + 1
+
+	elseif token.type == "{" then
+		return parseBraceBlock(tokens, pos)
+
+	elseif token.type == "ident" then
+		return token.value, pos + 1
+
+	else
+		error("unexpected token in value: " .. token.type)
+	end
+end
+
+function parseAssignments(tokens)
+	-- result table
+	local result = {}
+	local pos = 1
+
+	local token = tokens[pos]
+	-- skip 'return' keyword if present
+	if token and token.type == "return" then
+		pos = 2
+		token = tokens[pos]
+	end
+
+	-- top-level { ... } shortcut
+	if token and token.type == "{" then
+		return (parseBraceBlock(tokens, pos))
+	end
+
+	while pos <= #tokens do
+		token = tokens[pos]
+		local nextToken = tokens[pos+1]
+
+		-- if "ident =" -> normal field
+		if token.type == "ident"
+		and nextToken
+		and nextToken.type == "=" then
+
+			local key = token.value
+			pos = pos + 2 -- skip key and '='
+
+			local val
+			val, pos = parseValue(tokens, pos)
+			result[key] = val
+
+		else
+			-- otherwise -> list value
+			local val
+			val, pos = parseValue(tokens, pos)
+			table.insert(result, val)
+		end
+	end
+
+	return result
+end
+
+------
+
+local function encodeQuotes (tableValue, out)
+-- choose quote style based on content
+	local hasSingle = tableValue:match("'")
+	local hasDouble = tableValue:match('"')
+
+	if hasSingle and not hasDouble then
+		-- use double quotes if string contains single quotes
+		out[#out+1] = '"'
+		out[#out+1] = tableValue:gsub("\\", "\\\\"):gsub("\n", "\\n"):gsub("\t", "\\t"):gsub('"', '\\"')
+		out[#out+1] = '"'
+	elseif hasDouble and not hasSingle then
+		-- use single quotes if string contains double quotes
+		out[#out+1] = "'"
+		out[#out+1] = tableValue:gsub("\\", "\\\\"):gsub("\n", "\\n"):gsub("\t", "\\t"):gsub("'", "\\'")
+		out[#out+1] = "'"
+	elseif hasSingle and hasDouble then
+		-- if both, use double quotes and escape
+		out[#out+1] = '"'
+		out[#out+1] = tableValue:gsub("\\", "\\\\"):gsub("\n", "\\n"):gsub("\t", "\\t"):gsub('"', '\\"')
+		out[#out+1] = '"'
+	else
+		-- no quotes in string, prefer double quotes
+		out[#out+1] = '"'
+		out[#out+1] = tableValue:gsub("\\", "\\\\"):gsub("\n", "\\n"):gsub("\t", "\\t")
+		out[#out+1] = '"'
+	end
+end
+
+local function encodeValue(tableValue, indent, out)
+	local typ = type(tableValue)
+
+	if typ == "number" then
+--		out[#out+1] = '\n-- number '..tableValue..'\n'
+		out[#out+1] = tostring(tableValue)
+	elseif typ == "boolean" then
+--		out[#out+1] = '-- boolean '..tostring(tableValue)..'\n'
+		out[#out+1] = tableValue and "true" or "false"
+	elseif typ == "nil" then
+		out[#out+1] = "nil"
+	elseif typ == "string" then
+		-- use [[ ]] for multi-line strings
+		if tableValue:match("\n") then
+			out[#out+1] = "[["
+			out[#out+1] = tableValue
+			out[#out+1] = "]]"
+		else
+--			out[#out+1] = string.format("%q", tableValue)
+			encodeQuotes (tableValue, out)
+		end
+
+	elseif typ == "table" then
 		out[#out+1] = "{"
 		out[#out+1] = "\n"
 
 		local nextIndent = indent .. "  "
 
 		-- array part
-		local max = #v
+		local max = #tableValue
 		for i = 1, max do
 			out[#out+1] = nextIndent
-			encodeValue(v[i], nextIndent, out)
+			encodeValue(tableValue[i], nextIndent, out)
 			out[#out+1] = ",\n"
 		end
 
 		-- key-value part
-		for k,val in pairs(v) do
+		for k,val in pairs(tableValue) do
 			if type(k) ~= "number" or k > max or k < 1 then
 				out[#out+1] = nextIndent
 				if type(k) == "string" and k:match("^[%a_][%w_]*$") then
@@ -323,7 +364,7 @@ local function encodeValue(v, indent, out)
 		out[#out+1] = indent
 		out[#out+1] = "}"
 	else
-		error("unsupported type: " .. t)
+		error("unsupported type: " .. typ)
 	end
 end
 
@@ -356,10 +397,10 @@ function luaml.encode(tbl, tableMode)
 
 		-- object part
 		out[#out+1] = "-- object part\n"
-		for k, v in pairs(tbl) do
+		for k, value in pairs(tbl) do
 			if type(k) ~= "number" or k < 1 or k > max then
 				out[#out+1] = k .. " = "
-				encodeValue(v, indent, out)
+				encodeValue(value, indent, out)
 				out[#out+1] = "\n"
 			end
 		end

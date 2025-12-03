@@ -30,7 +30,10 @@ function love.load()
 	decodedTable = luaml.decode(file1:read("*a"))
 	file1:close()
 
-	
+	if not decodedTable then
+
+		error ('no table')
+	end
 
 -- 2. Save the table as serialized string to the file:
 	local file2 = io.open("test-data-saved-global.luaml", "w")
@@ -38,7 +41,7 @@ function love.load()
 	file2:write(encodedAsGlobal)
 	file2:close()
 	print("Saved big table to test-data-saved-global.luaml")
-	
+
 	-- 3. Save the table as serialized string to the file:
 	local file3 = io.open("test-data-saved-table.luaml", "w")
 	local encodedAsTable = luaml.encode(decodedTable, true)
