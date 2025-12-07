@@ -1,14 +1,129 @@
 -- luaml.lua
--- ml parser with lua-like syntax
--- comments are lowercase
+-- Lua parser for LuaML with lua-like syntax
+
 -- https://github.com/darkfrei/LuaML
--- Version: 2025-12-03
+-- https://github.com/darkfrei/love2d-lua-tests/tree/main/parser-luaml-lua
+-- Version: 2025-12-07
 
 local luaml = {}
 
 local parseValue, parseBraceBlock, parseAssignments
 
+
+---------
+
+-- log
+
+local function hex(b)
+	return string.format("0x%02X", b or 0)
+end
+
+local function log(...)
+--	print("[utf8-parse]", ...)
+end
+
 ------
+-- utf8 things
+local function utf8Char(str, i)
+	local c = str:byte(i)
+	if not c then
+		log("utf8Char: i=", i, " -> <nil>")
+		return nil
+	end
+
+	if c < 0x80 then
+		local ch = str:sub(i, i)
+		log("utf8Char: i=", i, " first=", hex(c), " size=1 char='", ch, "'")
+		return ch, 1
+	elseif c < 0xE0 then
+		local c2 = str:byte(i+1)
+		local ch = str:sub(i, i+1)
+		log("utf8Char: i=", i, " first=", hex(c), " c2=", hex(c2), " size=2 char='", ch, "'")
+		return ch, 2
+	elseif c < 0xF0 then
+		local c2, c3 = str:byte(i+1), str:byte(i+2)
+		local ch = str:sub(i, i+2)
+		log("utf8Char: i=", i, " first=", hex(c), " c2=", hex(c2), " c3=", hex(c3), " size=3 char='", ch, "'")
+		return ch, 3
+	else
+		local c2, c3, c4 = str:byte(i+1), str:byte(i+2), str:byte(i+3)
+		local ch = str:sub(i, i+3)
+		log("utf8Char: i=", i, " first=", hex(c), " c2=", hex(c2), " c3=", hex(c3), " c4=", hex(c4), " size=4 char='", ch, "'")
+		return ch, 4
+	end
+end
+
+local function isUTF8Letter(ch)
+	local b = ch:byte()
+
+	local ok = ((b >= 65 and b <= 90) or (b >= 97 and b <= 122) or ch == "_") or (b >= 0xC0)
+	log("isUTF8Letter: ch='", ch, "' b=", hex(b), " -> ", ok and "true" or "false")
+
+
+	-- ASCII A–Z, a–z, _
+	if (b >= 65 and b <= 90) or (b >= 97 and b <= 122) or ch == "_" then
+		return true
+	end
+
+	-- everything above 0x80 is treated as letter
+	if b >= 0xC0 then
+		return true
+	end
+
+	return false
+end
+
+local function isUTF8identChar(ch)
+	local b = ch:byte()
+	local ok = (b >= 48 and b <= 57)  -- 0–9
+	or (b >= 65 and b <= 90)   -- A–Z
+	or (b >= 97 and b <= 122)  -- a–z
+	or ch == "_" or ch == "-"
+	or b >= 0x80
+	log("isUTF8identChar: ch='", ch, "' b=", hex(b), " -> ", ok and "true" or "false")
+	return ok
+end
+
+local function utf8match(ch, class)
+	if class == "%a" then
+		return isUTF8Letter(ch)
+	elseif class == "%w" then
+		return isUTF8identChar(ch)
+	elseif class == "_" then
+		return ch == "_"
+	elseif class == "-" then
+		return ch == "-"
+	end
+	return false
+end
+
+
+-----
+-- overload
+
+function string.utf8chars(str)
+	local i = 1
+	return function()
+		if i > #str then return nil end
+		local ch, len = utf8Char(str, i)
+		i = i + len
+		return ch
+	end
+end
+
+function string.isLetter(ch)
+	return isUTF8Letter(ch)
+end
+
+function string.isIdentChar(ch)
+	return isUTF8identChar(ch)
+end
+
+-- end of utf8 things
+
+
+--------
+
 
 -- lexer: splits into tokens, ignores comments starting with --
 local function tokenize(str)
@@ -34,11 +149,28 @@ local function tokenize(str)
 				i = i + 1
 			end
 
-			-- single-line comment --
-		elseif ch == "-" and str:sub(i,i+1) == "--" then
-			i = i + 2
-			while i <= n and str:sub(i,i) ~= "\n" do
+			-- single-line comment or minus sign
+		elseif ch == "-" then
+			local nextCh = str:sub(i+1, i+1)
+			if nextCh == "-" then
+				-- single-line comment
+				i = i + 2
+				while i <= n and str:sub(i,i) ~= "\n" do
+					i = i + 1
+				end
+			elseif nextCh:match("[0-9]") then
+				-- negative number
+				local start = i
 				i = i + 1
+				while i <= n and str:sub(i,i):match("[%d%.eE%+%-]") do
+					i = i + 1
+				end
+				local numstr = str:sub(start, i-1)
+				local num = tonumber(numstr)
+				if not num then error("invalid number format: " .. numstr) end
+				tokens[#tokens+1] = {type="number", value=num}
+			else
+				error("unexpected character: -")
 			end
 
 		elseif ch == "{" then
@@ -57,19 +189,30 @@ local function tokenize(str)
 			tokens[#tokens+1] = {type="="}
 			i = i + 1
 
-			-- multi-line string [[ ... ]]
-		elseif ch == "[" and str:sub(i,i+1) == "[[" then
-			local start = i + 2
-			i = start
-			while i <= n do
-				if str:sub(i,i+1) == "]]" then
-					break
+			-- brackets and multi-line string [[ ... ]]
+		elseif ch == "[" then
+			if str:sub(i,i+1) == "[[" then
+				-- multi-line string
+				local start = i + 2
+				i = start
+				while i <= n do
+					if str:sub(i,i+1) == "]]" then
+						break
+					end
+					i = i + 1
 				end
+				local raw = str:sub(start, i-1)
+				tokens[#tokens+1] = {type="string", value=raw}
+				i = i + 2
+			else
+				-- single bracket
+				tokens[#tokens+1] = {type="["}
 				i = i + 1
 			end
-			local raw = str:sub(start, i-1)
-			tokens[#tokens+1] = {type="string", value=raw}
-			i = i + 2
+
+		elseif ch == "]" then
+			tokens[#tokens+1] = {type="]"}
+			i = i + 1
 
 			-- single-quote string
 		elseif ch == "'" then
@@ -103,16 +246,34 @@ local function tokenize(str)
 			tokens[#tokens+1] = {type="string", value=raw}
 			i = i + 1
 
-		elseif ch:match("[%a_]") then
-			-- identifier, boolean, or nil
+--		elseif ch:match("[%a_]") then
+--		elseif utf8match () then
+--		elseif isUTF8Letter(ch) then
+--			-- identifier (including with dashes), boolean, or nil
+--			local start = i
+--			i = i + 1
+--			while i <= n and str:sub(i,i):match("[%w_%-]") do
+--				i = i + 1
+--			end
+--			local word = str:sub(start,i-1)
+
+		elseif isUTF8Letter(ch) then
 			local start = i
-			i = i + 1
-			while i <= n and str:sub(i,i):match("[%w_]") do
-				i = i + 1
+			local ch, size = utf8Char(str, i)
+			i = i + size
+
+			while true do
+				local next_ch, next_size = utf8Char(str, i)
+				if not next_ch or not isUTF8identChar(next_ch) then
+					break
+				end
+				i = i + next_size
 			end
-			local word = str:sub(start,i-1)
+
+			local word = str:sub(start, i-1)
+
+
 			if word == "return" then
---				print ('found "return"')
 				tokens[#tokens+1] = {type="return"}
 			elseif word == "true" then
 				tokens[#tokens+1] = {type="bool", value=true}
@@ -124,7 +285,7 @@ local function tokenize(str)
 				tokens[#tokens+1] = {type="ident", value=word}
 			end
 
-		elseif ch:match("[%+%-0-9]") then
+		elseif ch:match("[%+0-9]") then
 			-- number (including hex 0x, exponential)
 			local start = i
 
@@ -185,12 +346,55 @@ function parseBraceBlock(tokens, pos)
 
 		local key, val
 
-		-- detect object entry
+		-- detect object entry: ident =
 		if token.type == "ident" and tokenNext and tokenNext.type == "=" then
 			isObject = true
 			key = token.value
 			pos = pos + 2
+			val, pos = parseValue(tokens, pos)
+			block[key] = val
 
+			-- detect object entry: ["string"] = or ['string'] =
+		elseif token.type == "[" and tokenNext and tokenNext.type == "string" then
+			local tokenAfterString = tokens[pos + 2]
+			if tokenAfterString and tokenAfterString.type == "]" then
+				local tokenAfterBracket = tokens[pos + 3]
+				if tokenAfterBracket and tokenAfterBracket.type == "=" then
+					isObject = true
+					key = tokenNext.value
+					pos = pos + 4 -- skip [, string, ], =
+					val, pos = parseValue(tokens, pos)
+					block[key] = val
+				else
+					error("expected '=' after [\"key\"]")
+				end
+			else
+				error("expected ']' after [\"key\"")
+			end
+
+			-- detect object entry: [ident] =
+		elseif token.type == "[" and tokenNext and tokenNext.type == "ident" then
+			local tokenAfterIdent = tokens[pos + 2]
+			if tokenAfterIdent and tokenAfterIdent.type == "]" then
+				local tokenAfterBracket = tokens[pos + 3]
+				if tokenAfterBracket and tokenAfterBracket.type == "=" then
+					isObject = true
+					key = tokenNext.value
+					pos = pos + 4 -- skip [, ident, ], =
+					val, pos = parseValue(tokens, pos)
+					block[key] = val
+				else
+					error("expected '=' after [key]")
+				end
+			else
+				error("expected ']' after [key")
+			end
+
+			-- detect object entry: "string" =
+		elseif token.type == "string" and tokenNext and tokenNext.type == "=" then
+			isObject = true
+			key = token.value
+			pos = pos + 2
 			val, pos = parseValue(tokens, pos)
 			block[key] = val
 
@@ -258,13 +462,53 @@ function parseAssignments(tokens)
 		local nextToken = tokens[pos+1]
 
 		-- if "ident =" -> normal field
-		if token.type == "ident"
-		and nextToken
-		and nextToken.type == "=" then
-
+		if token.type == "ident" and nextToken and nextToken.type == "=" then
 			local key = token.value
-			pos = pos + 2 -- skip key and '='
+			pos = pos + 2
+			local val
+			val, pos = parseValue(tokens, pos)
+			result[key] = val
 
+			-- ["string"] =
+		elseif token.type == "[" and nextToken and nextToken.type == "string" then
+			local tokenAfterString = tokens[pos + 2]
+			if tokenAfterString and tokenAfterString.type == "]" then
+				local tokenAfterBracket = tokens[pos + 3]
+				if tokenAfterBracket and tokenAfterBracket.type == "=" then
+					local key = nextToken.value
+					pos = pos + 4
+					local val
+					val, pos = parseValue(tokens, pos)
+					result[key] = val
+				else
+					error("expected '=' after [\"key\"]")
+				end
+			else
+				error("expected ']' after [\"key\"")
+			end
+
+			-- [ident] =
+		elseif token.type == "[" and nextToken and nextToken.type == "ident" then
+			local tokenAfterIdent = tokens[pos + 2]
+			if tokenAfterIdent and tokenAfterIdent.type == "]" then
+				local tokenAfterBracket = tokens[pos + 3]
+				if tokenAfterBracket and tokenAfterBracket.type == "=" then
+					local key = nextToken.value
+					pos = pos + 4
+					local val
+					val, pos = parseValue(tokens, pos)
+					result[key] = val
+				else
+					error("expected '=' after [key]")
+				end
+			else
+				error("expected ']' after [key")
+			end
+
+			-- "string" =
+		elseif token.type == "string" and nextToken and nextToken.type == "=" then
+			local key = token.value
+			pos = pos + 2
 			local val
 			val, pos = parseValue(tokens, pos)
 			result[key] = val

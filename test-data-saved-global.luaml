@@ -1,61 +1,23 @@
 -- mode: global
 -- array part
 1
-2
-4
+"abc"
+true
 -- end of array part
 
 -- object part
-mixed_quotes = "He said: \"It's fine!\" I'm ok"
-backslash = "\\\\\\"
-users = {
-  {
-    1,
-    2,
-    3,
-    age = 7,
-    name = "Alice",
-    id = 1,
-    active = true,
-  },
-  {
-    age = 9,
-    name = "Bob",
-    id = 2,
-    active = false,
-  },
-  {
-    age = 12,
-    name = "Charlie",
-    id = 3,
-    active = true,
-  },
-  admin = "Bob",
-}
 escape_sequences = [[Line1
 Line2	Tabbed]]
-message = "Hello, LuaML!"
 score = 42
+flag = true
+camalCase = "OK"
 equals = "a=b=c==="
 dashes = "----"
-settings = {
-  "default",
-  quotes2 = '"',
-  type = "123456",
-  resolution = {
-    height = 1080,
-    width = 1920,
-  },
-  fullscreen = false,
-  volume = 0.8,
-  quotes1 = "'",
-}
-special = "!@#$%^&*()_+-=[]{}|;:,.<>?/~`"
 nested = {
   arr2 = {
+    a = "x",
     b = "y",
     c = "z",
-    a = "x",
   },
   deep = {
     key1 = {
@@ -76,28 +38,88 @@ nested = {
     50,
   },
 }
+special = "!@#$%^&*()_+-=[]{}|;:,.<>?/~`"
 all_together = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
-flag = true
+stringKeys = {
+  ["extended-kebab-case-key"] = "OK",
+  ["bracketed-string-key"] = "OK",
+  another_string_key = "OK",
+  plain_snake_case_identifier = "OK",
+  ["quoted-string-key"] = "OK",
+  quoted_snake_key = "OK",
+  ["quoted-kebab-key"] = "OK",
+  numberLikeId1 = "OK",
+  id2value = "OK",
+  ["bracketed-ident"] = "OK",
+  PLAIN_CONSTANT_CASE = "OK",
+  ["ключ-с-дефисом"] = "OK",
+  ["пример_unicode_значение"] = "норм",
+  ["пример_unicode_ключ"] = "OK",
+  ["another-bracket-key"] = "OK",
+  mixed123identifier = "OK",
+  ["some-kebab-string-key"] = "OK",
+  PlainPascalCaseIdentifier = "OK",
+  plainCamelCaseIdentifier = "OK",
+  ["plain-kebab-identifier"] = "OK",
+}
+quotes_double = '"""'
+users = {
+  {
+    1,
+    2,
+    3,
+    active = true,
+    age = 7,
+    id = 1,
+    name = "Alice",
+  },
+  {
+    active = false,
+    age = 9,
+    id = 2,
+    name = "Bob",
+  },
+  {
+    active = true,
+    age = 12,
+    id = 3,
+    name = "Charlie",
+  },
+  admin = "Bob",
+}
+quotes_single = "'''"
 items = {
   3,
   {
-    name = "Apple",
-    price = 0.5,
     id = 101,
+    price = 0.5,
+    name = "Apple",
   },
   {
-    name = "Banana",
-    price = 0.3,
     id = 102,
+    price = 0.3,
+    name = "Banana",
   },
   {
-    name = "Orange",
-    price = 0.7,
     id = 103,
+    price = 0.7,
+    name = "Orange",
   },
 }
-camalCase = "OK"
-quotes_double = '"""'
+mixed_quotes = "He said: \"It's fine!\" I'm ok"
 brackets = "{{}}[[]]<>(())"
-quotes_single = "'''"
+backslash = "\\\\\\"
+settings = {
+  "default",
+  fullscreen = false,
+  quotes1 = "'",
+  quotes2 = '"',
+  type = "123456",
+  volume = 0.8,
+  resolution = {
+    width = 1920,
+    height = 1080,
+  },
+}
+message = "Hello, LuaML!"
 -- end of object part
